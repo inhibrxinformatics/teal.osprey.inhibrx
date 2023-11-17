@@ -1,0 +1,36 @@
+url: https://insightsengineering.github.io/teal.osprey
+
+
+template:
+  package: nesttemplate
+
+navbar:
+  structure:
+    left: [intro, reference, articles, tutorials, news, reports]
+    right: [search, github]
+  components:
+    reports:
+      text: Reports
+      menu:
+      - text: Coverage report
+        href: coverage-report/
+      - text: Unit test report
+        href: unit-test-report/
+    github:
+      icon: fa-github
+      href: https://github.com/insightsengineering/teal.osprey
+
+
+reference:
+  - title: Graph Modules
+    desc: "Teal graph modules including safety and early efficacy graphs"
+    contents:
+      - starts_with("tm_g_")
+  - title: Utility
+    desc: "Utilities fuctions used in the package"
+    contents:
+      - label_aevar
+      - plot_decorate_output
+      - quick_filter
+      - srv_g_decorate
+      - ui_g_decorate
