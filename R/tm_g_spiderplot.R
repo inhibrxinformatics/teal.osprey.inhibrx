@@ -346,7 +346,7 @@ srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, label, 
       q1 <- teal.code::eval_code(
         q1,
         code = bquote({
-          ANL$USUBJID <- unlist(lapply(strsplit(ANL$USUBJID, "-", fixed = TRUE), tail, 1)) # nolint
+          #ANL$USUBJID <- unlist(lapply(strsplit(ANL$USUBJID, "-", fixed = TRUE), tail, 1)) # nolint
           ANL_f <- ANL %>% # nolint
             filter(PARAMCD == .(paramcd)) %>%
             as.data.frame()
