@@ -384,8 +384,20 @@ srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, label, 
             } else {
               NULL
             }),
-            marker_shape_opt = marker_var_opt,
-            line_color_opt = line_colorby_opt,
+            line_color_opt = .(if (length(line_colby) == 0) {
+              NULL
+            } else if (length(line_colby) > 0 & all(unique(ANL_f[[line_colby]]) %in% names(line_color_opt))) {
+              line_color_opt
+            } else {
+              NULL
+            }),
+            marker_shape_opt = .(if (length(marker_shape) == 0) {
+              NULL
+            } else if (length(marker_shape) > 0 & all(unique(ANL_f[[marker_shape]]) %in% names(marker_shape_opt))) {
+              marker_shape_opt
+            } else {
+              NULL
+            }),
             marker_size = 4,
             datalabel_txt = lbl,
             facet_rows = .(if (!is.null(yfacet_var)) {
