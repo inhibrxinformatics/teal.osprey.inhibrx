@@ -388,14 +388,14 @@ srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, marker_
             }),
             line_color_opt = .(if (length(line_colorby_var) == 0) {
               NULL
-            } else if (length(line_colorby_var) > 0 & all(unique(ANL_f[[line_colorby_var]]) %in% names(line_color_opt))) {
+            } else if (length(line_colorby_var) > 0 & all(unique(anl[[line_colorby_var]]) %in% names(line_color_opt))) {
               line_color_opt
             } else {
               NULL
             }),
             marker_shape_opt = .(if (length(marker_var) == 0) {
               NULL
-            } else if (length(marker_var) > 0 & all(unique(ANL_f[[marker_var]]) %in% names(marker_shape_opt))) {
+            } else if (length(marker_var) > 0 & all(unique(anl[[marker_var]]) %in% names(marker_shape_opt))) {
               marker_shape_opt
             } else {
               NULL
