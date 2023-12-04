@@ -90,6 +90,8 @@ tm_g_spiderplot <- function(label,
                             y_var,
                             marker_var,
                             line_colorby_var,
+                            marker_var_opt = NULL,
+                            line_colorby_opt = NULL,
                             xfacet_var = NULL,
                             yfacet_var = NULL,
                             vref_line = NULL,
@@ -382,6 +384,8 @@ srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, label, 
             } else {
               NULL
             }),
+            marker_shape_opt = marker_var_opt,
+            line_color_opt = line_colorby_opt,
             marker_size = 4,
             datalabel_txt = lbl,
             facet_rows = .(if (!is.null(yfacet_var)) {

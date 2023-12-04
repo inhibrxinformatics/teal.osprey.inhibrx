@@ -1,0 +1,16 @@
+label_aevar             Automatically switch variable labels for
+                        standard 'AE' variables in 'AE' osprey
+                        functions *[Stable]*
+plot_decorate_output    Helper function to plot decorated output UI
+quick_filter            Utility function for quick filter *[Stable]*
+srv_g_decorate          Helper server function to decorate plot output
+tm_g_ae_oview           Teal module for the 'AE' overview
+tm_g_ae_sub             teal module for the 'AE' by subgroups
+tm_g_butterfly          Butterfly plot Teal Module
+tm_g_events_term_id     Events by Term Plot Teal Module
+tm_g_heat_bygrade       Teal module for the heatmap by grade
+tm_g_patient_profile    Patient Profile plot teal module
+tm_g_spiderplot         Spider plot Teal Module
+tm_g_swimlane           Teal Module for 'Swimlane' Plot
+tm_g_waterfall          Teal Module for Waterfall Plot
+ui_g_decorate           Helper UI function to decorate plot output UI
