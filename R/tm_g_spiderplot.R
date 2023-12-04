@@ -386,12 +386,12 @@ srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, marker_
             } else {
               NULL
             }),
-            line_color_opt = if (length(.(line_colorby_var)) > 0 & all(bquote(unique(ANL_f[.(line_colorby_var)])) %in% names(.(line_color_opt)))) {
+            line_color_opt = if (length(.(line_colorby_var)) > 0 & all(bquote(unique(data.frame(ANL_f[.(line_colorby_var)]))) %in% names(.(line_color_opt)))) {
               .(line_color_opt)
             } else {
               NULL
             },
-            marker_shape_opt = if (length(.(marker_var)) > 0 & all(bquote(unique(ANL_f[.(marker_var)])) %in% names(.(marker_shape_opt)))) {
+            marker_shape_opt = if (length(.(marker_var)) > 0 & all(bquote(unique(data.frame(ANL_f[.(marker_var)]))) %in% names(.(marker_shape_opt)))) {
               .(marker_shape_opt)
             } else {
               NULL
