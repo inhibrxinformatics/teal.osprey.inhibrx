@@ -245,7 +245,7 @@ ui_g_spider <- function(id, ...) {
   )
 }
 
-srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, marker_shape_opt, line_color_opt = line_color_optlabel, plot_height, plot_width) {
+srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, marker_shape_opt, line_color_opt, label, plot_height, plot_width) {
   with_reporter <- !missing(reporter) && inherits(reporter, "Reporter")
   with_filter <- !missing(filter_panel_api) && inherits(filter_panel_api, "FilterPanelAPI")
   checkmate::assert_class(data, "tdata")
