@@ -92,6 +92,8 @@ tm_g_spiderplot <- function(label,
                             line_colorby_var,
                             marker_shape_opt = NULL,
                             line_color_opt = NULL,
+                            line_color_rand = FALSE,
+                            marker_shape_rand = FALSE,
                             xfacet_var = NULL,
                             yfacet_var = NULL,
                             vref_line = NULL,
@@ -112,6 +114,8 @@ tm_g_spiderplot <- function(label,
   checkmate::assert_class(yfacet_var, classes = "choices_selected")
   checkmate::assert_string(vref_line)
   checkmate::assert_string(href_line)
+  checkmate::assert_flag(line_color_rand)
+  checkmate::assert_flag(marker_shape_rand)
   checkmate::assert_flag(anno_txt_var)
   checkmate::assert_flag(legend_on)
   checkmate::assert_numeric(plot_height, len = 3, any.missing = FALSE, finite = TRUE)
@@ -205,6 +209,16 @@ ui_g_spider <- function(id, ...) {
             a$yfacet_var$selected,
             multiple = TRUE
           )
+        ),
+        checkboxInput(
+          ns("line_color_rand"),
+          "Use Random colors?",
+          value = a$line_color_rand
+        ),
+        checkboxInput(
+          ns("marker_shape_rand"),
+          "Use Random shapes?",
+          value = a$marker_shape_rand
         ),
         checkboxInput(
           ns("anno_txt_var"),
@@ -305,6 +319,8 @@ srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, marker_
       y_var <- input$y_var
       marker_var <- input$marker_var
       line_colorby_var <- input$line_colorby_var
+      line_color_rand <- input$line_color_rand
+      marker_shape_rand <- input$marker_shape_rand
       anno_txt_var <- input$anno_txt_var
       legend_on <- input$legend_on # nolint
       xfacet_var <- input$xfacet_var
@@ -386,16 +402,14 @@ srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, marker_
             } else {
               NULL
             }),
-            line_color_opt = .(if (length(line_colorby_var) > 0 & unique(bquote(data.frame(ANL_f[, line_colorby_var]))) %in% names(line_color_opt)) {
+            line_color_opt = if (line_color_rand) {NULL 
+              } else {
               .(line_color_opt)
-            } else {
-              NULL
-            }),
-            marker_shape_opt = .(if (length(marker_var) > 0 & unique(bquote(data.frame(ANL_f[, .(marker_var)]))) %in% names(marker_shape_opt)) {
-              .(marker_shape_opt)
-            } else {
-              NULL
-            }),
+            },
+            marker_shape_opt = if (marker_shape_rand) {NULL
+              } else {
+                .(marker_shape_opt)
+              },
             marker_size = 4,
             datalabel_txt = lbl,
             facet_rows = .(if (!is.null(yfacet_var)) {
