@@ -402,11 +402,11 @@ srv_g_spider <- function(id, data, filter_panel_api, reporter, dataname, marker_
             } else {
               NULL
             }),
-            line_color_opt = if (line_color_rand) {NULL 
+            line_color_opt = if (.(line_color_rand)) {NULL 
               } else {
               .(line_color_opt)
             },
-            marker_shape_opt = if (marker_shape_rand) {NULL
+            marker_shape_opt = if (.(marker_shape_rand)) {NULL
               } else {
                 .(marker_shape_opt)
               },
