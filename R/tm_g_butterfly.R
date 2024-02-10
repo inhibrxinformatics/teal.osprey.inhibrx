@@ -40,69 +40,58 @@
 #' @template author_liaoc10
 #'
 #' @examples
-#'
 #' # Example using stream (ADaM) dataset
-#' library(dplyr)
-#' library(nestcolor)
+#' data <- cdisc_data() |>
+#'   within({
+#'     library(dplyr)
+#'     library(nestcolor)
+#'     set.seed(23)
+#'     ADSL <- rADSL
+#'     ADAE <- rADAE
+#'     ADSL <- mutate(ADSL, DOSE = paste(sample(1:3, n(), replace = TRUE), "UG"))
+#'     ADAE <- mutate(
+#'       ADAE,
+#'       flag1 = ifelse(AETOXGR == 1, 1, 0),
+#'       flag2 = ifelse(AETOXGR == 2, 1, 0),
+#'       flag3 = ifelse(AETOXGR == 3, 1, 0),
+#'       flag1_filt = rep("Y", n())
+#'     )
+#'   })
 #'
-#' set.seed(23)
-#' ADSL <- osprey::rADSL
-#' ADAE <- osprey::rADAE
-#' ADSL <- mutate(ADSL, DOSE = paste(sample(1:3, n(), replace = TRUE), "UG"))
-#' ADAE <- mutate(
-#'   ADAE,
-#'   flag1 = ifelse(AETOXGR == 1, 1, 0),
-#'   flag2 = ifelse(AETOXGR == 2, 1, 0),
-#'   flag3 = ifelse(AETOXGR == 3, 1, 0),
-#'   flag1_filt = rep("Y", n())
-#' )
+#' datanames(data) <- c("ADSL", "ADAE")
+#' join_keys(data) <- default_cdisc_join_keys[datanames(data)]
 #'
 #' app <- init(
-#'   data = cdisc_data(
-#'     cdisc_dataset("ADSL", ADSL,
-#'       code = "ADSL <- osprey::rADSL
-#'               set.seed(23)
-#'               ADSL <- mutate(ADSL, DOSE = paste(sample(1:3, n(), replace = TRUE), 'UG'))"
-#'     ),
-#'     cdisc_dataset("ADAE", ADAE,
-#'       code = "ADAE <- osprey::rADAE
-#'               ADAE <- mutate(ADAE,
-#'               flag1 = ifelse(AETOXGR == 1, 1, 0),
-#'               flag2 = ifelse(AETOXGR == 2, 1, 0),
-#'               flag3 = ifelse(AETOXGR == 3, 1, 0),
-#'               flag1_filt = rep('Y', n()))"
-#'     ),
-#'     check = TRUE
-#'   ),
+#'   data = data,
 #'   modules = modules(
 #'     tm_g_butterfly(
 #'       label = "Butterfly Plot",
 #'       dataname = "ADAE",
-#'       right_var = teal.transform::choices_selected(
+#'       right_var = choices_selected(
 #'         selected = "SEX",
 #'         choices = c("SEX", "ARM", "RACE")
 #'       ),
-#'       left_var = teal.transform::choices_selected(
+#'       left_var = choices_selected(
 #'         selected = "RACE",
 #'         choices = c("SEX", "ARM", "RACE")
 #'       ),
-#'       category_var = teal.transform::choices_selected(
+#'       category_var = choices_selected(
 #'         selected = "AEBODSYS",
 #'         choices = c("AEDECOD", "AEBODSYS")
 #'       ),
-#'       color_by_var = teal.transform::choices_selected(
+#'       color_by_var = choices_selected(
 #'         selected = "AETOXGR",
 #'         choices = c("AETOXGR", "None")
 #'       ),
-#'       count_by_var = teal.transform::choices_selected(
+#'       count_by_var = choices_selected(
 #'         selected = "# of patients",
 #'         choices = c("# of patients", "# of AEs")
 #'       ),
-#'       facet_var = teal.transform::choices_selected(
+#'       facet_var = choices_selected(
 #'         selected = NULL,
 #'         choices = c("RACE", "SEX", "ARM")
 #'       ),
-#'       sort_by_var = teal.transform::choices_selected(
+#'       sort_by_var = choices_selected(
 #'         selected = "count",
 #'         choices = c("count", "alphabetical")
 #'       ),
@@ -277,12 +266,13 @@ ui_g_butterfly <- function(id, ...) {
 srv_g_butterfly <- function(id, data, filter_panel_api, reporter, dataname, label, plot_height, plot_width) {
   with_reporter <- !missing(reporter) && inherits(reporter, "Reporter")
   with_filter <- !missing(filter_panel_api) && inherits(filter_panel_api, "FilterPanelAPI")
-  checkmate::assert_class(data, "tdata")
+  checkmate::assert_class(data, "reactive")
+  checkmate::assert_class(shiny::isolate(data()), "teal_data")
 
   moduleServer(id, function(input, output, session) {
     iv <- reactive({
-      ADSL <- data[["ADSL"]]() # nolint
-      ANL <- data[[dataname]]() # nolint
+      ADSL <- data()[["ADSL"]] # nolint
+      ANL <- data()[[dataname]] # nolint
 
       iv <- shinyvalidate::InputValidator$new()
       iv$add_rule("category_var", shinyvalidate::sv_required(
@@ -327,10 +317,10 @@ srv_g_butterfly <- function(id, data, filter_panel_api, reporter, dataname, labe
             selected = character(0)
           )
         } else {
-          options$r <- if (right_var %in% names(data[["ADSL"]]())) {
-            levels(data[["ADSL"]]()[[right_var]])
+          options$r <- if (right_var %in% names(data()[["ADSL"]])) {
+            levels(data()[["ADSL"]][[right_var]])
           } else {
-            levels(data[[dataname]]()[[right_var]])
+            levels(data()[[dataname]][[right_var]])
           }
 
           selected <- if (length(right_val) > 0) {
@@ -364,10 +354,10 @@ srv_g_butterfly <- function(id, data, filter_panel_api, reporter, dataname, labe
             choices = character(0), selected = character(0)
           )
         } else {
-          options$l <- if (left_var %in% names(data[["ADSL"]]())) {
-            levels(data[["ADSL"]]()[[left_var]])
+          options$l <- if (left_var %in% names(data()[["ADSL"]])) {
+            levels(data()[["ADSL"]][[left_var]])
           } else {
-            levels(data[[dataname]]()[[left_var]])
+            levels(data()[[dataname]][[left_var]])
           }
 
           selected <- if (length(left_val) > 0) {
@@ -394,8 +384,8 @@ srv_g_butterfly <- function(id, data, filter_panel_api, reporter, dataname, labe
     output_q <- shiny::debounce(
       millis = 200,
       r = reactive({
-        ADSL <- data[["ADSL"]]() # nolint
-        ANL <- data[[dataname]]() # nolint
+        ADSL <- data()[["ADSL"]] # nolint
+        ANL <- data()[[dataname]] # nolint
 
         teal::validate_has_data(ADSL, min_nrow = 0, msg = sprintf("%s Data is empty", "ADSL"))
         teal::validate_has_data(ANL, min_nrow = 0, msg = sprintf("%s Data is empty", dataname))
@@ -431,7 +421,7 @@ srv_g_butterfly <- function(id, data, filter_panel_api, reporter, dataname, labe
         anl_vars <- unique(c("USUBJID", "STUDYID", varlist_from_anl)) # nolint
 
         q1 <- teal.code::eval_code(
-          teal.code::new_qenv(tdata2env(data), code = get_code_tdata(data)),
+          data(),
           code = bquote({
             ADSL <- ADSL[, .(adsl_vars)] %>% as.data.frame() # nolint
             ANL <- .(as.name(dataname))[, .(anl_vars)] %>% as.data.frame() # nolint
@@ -529,11 +519,13 @@ srv_g_butterfly <- function(id, data, filter_panel_api, reporter, dataname, labe
 
     ### REPORTER
     if (with_reporter) {
-      card_fun <- function(comment) {
-        card <- teal::TealReportCard$new()
-        card$set_name("Butterfly")
-        card$append_text("Butterfly Plot", "header2")
-        if (with_filter) card$append_fs(filter_panel_api$get_filter_state())
+      card_fun <- function(comment, label) {
+        card <- teal::report_card_template(
+          title = "Butterfly Plot",
+          label = label,
+          with_filter = with_filter,
+          filter_panel_api = filter_panel_api
+        )
         if (!is.null(input$filter_var) || !is.null(input$facet_var) || !is.null(input$sort_by_var)) {
           card$append_text("Selected Options", "header3")
         }
@@ -552,7 +544,7 @@ srv_g_butterfly <- function(id, data, filter_panel_api, reporter, dataname, labe
           card$append_text("Comment", "header3")
           card$append_text(comment)
         }
-        card$append_src(paste(teal.code::get_code(output_q()), collapse = "\n"))
+        card$append_src(teal.code::get_code(output_q()))
         card
       }
       teal.reporter::simple_reporter_srv("simple_reporter", reporter = reporter, card_fun = card_fun)
