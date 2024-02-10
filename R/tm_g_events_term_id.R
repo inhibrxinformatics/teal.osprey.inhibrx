@@ -18,29 +18,30 @@
 #' @author Molly He (hey59) \email{hey59@gene.com}
 #'
 #' @examples
-#' library(nestcolor)
+#' data <- cdisc_data() |>
+#'   within({
+#'     library(nestcolor)
+#'     ADSL <- rADSL
+#'     ADAE <- rADAE
+#'   })
 #'
-#' ADSL <- osprey::rADSL
-#' ADAE <- osprey::rADAE
+#' datanames(data) <- c("ADSL", "ADAE")
+#' join_keys(data) <- default_cdisc_join_keys[datanames(data)]
 #'
 #' app <- init(
-#'   data = cdisc_data(
-#'     cdisc_dataset("ADSL", ADSL, code = "ADSL <- osprey::rADSL"),
-#'     cdisc_dataset("ADAE", ADAE, code = "ADAE <- osprey::rADAE"),
-#'     check = TRUE
-#'   ),
+#'   data = data,
 #'   modules = modules(
 #'     tm_g_events_term_id(
 #'       label = "Common AE",
 #'       dataname = "ADAE",
-#'       term_var = teal.transform::choices_selected(
+#'       term_var = choices_selected(
 #'         selected = "AEDECOD",
 #'         choices = c(
 #'           "AEDECOD", "AETERM",
 #'           "AEHLT", "AELLT", "AEBODSYS"
 #'         )
 #'       ),
-#'       arm_var = teal.transform::choices_selected(
+#'       arm_var = choices_selected(
 #'         selected = "ACTARMCD",
 #'         choices = c("ACTARM", "ACTARMCD")
 #'       ),
@@ -209,7 +210,8 @@ srv_g_events_term_id <- function(id,
                                  plot_width) {
   with_reporter <- !missing(reporter) && inherits(reporter, "Reporter")
   with_filter <- !missing(filter_panel_api) && inherits(filter_panel_api, "FilterPanelAPI")
-  checkmate::assert_class(data, "tdata")
+  checkmate::assert_class(data, "reactive")
+  checkmate::assert_class(shiny::isolate(data()), "teal_data")
 
   moduleServer(id, function(input, output, session) {
     iv <- reactive({
@@ -274,7 +276,7 @@ srv_g_events_term_id <- function(id,
     observeEvent(input$arm_var,
       {
         arm_var <- input$arm_var
-        ANL <- data[[dataname]]() # nolint
+        ANL <- data()[[dataname]] # nolint
 
         choices <- levels(ANL[[arm_var]])
 
@@ -301,7 +303,7 @@ srv_g_events_term_id <- function(id,
     )
 
     output_q <- reactive({
-      ANL <- data[[dataname]]() # nolint
+      ANL <- data()[[dataname]] # nolint
 
       teal::validate_inputs(iv())
 
@@ -317,7 +319,7 @@ srv_g_events_term_id <- function(id,
       anl_vars <- c("USUBJID", "STUDYID", input$term) # nolint
 
       q1 <- teal.code::eval_code(
-        teal.code::new_qenv(tdata2env(data), code = get_code_tdata(data)),
+        data(),
         code = bquote(
           ANL <- merge( # nolint
             x = ADSL[, .(adsl_vars), drop = FALSE],
@@ -377,18 +379,20 @@ srv_g_events_term_id <- function(id,
 
     ### REPORTER
     if (with_reporter) {
-      card_fun <- function(comment) {
-        card <- teal::TealReportCard$new()
-        card$set_name("Events by Term")
-        card$append_text("Events by Term", "header2")
-        if (with_filter) card$append_fs(filter_panel_api$get_filter_state())
+      card_fun <- function(comment, label) {
+        card <- teal::report_card_template(
+          title = "Events by Term",
+          label = label,
+          with_filter = with_filter,
+          filter_panel_api = filter_panel_api
+        )
         card$append_text("Plot", "header3")
         card$append_plot(plot_r(), dim = pws$dim())
         if (!comment == "") {
           card$append_text("Comment", "header3")
           card$append_text(comment)
         }
-        card$append_src(paste(teal.code::get_code(output_q()), collapse = "\n"))
+        card$append_src(teal.code::get_code(output_q()))
         card
       }
       teal.reporter::simple_reporter_srv("simple_reporter", reporter = reporter, card_fun = card_fun)

@@ -47,41 +47,35 @@
 #' @author houx14 \email{houx14@gene.com}
 #'
 #' @examples
-#' library(nestcolor)
-#' ADSL <- osprey::rADSL
-#' ADRS <- osprey::rADRS
-#' ADTR <- osprey::rADTR
+#' data <- cdisc_data() |>
+#'   within({
+#'     library(nestcolor)
+#'     ADSL <- rADSL
+#'     ADRS <- rADRS
+#'     ADTR <- rADTR
+#'     ADSL$SEX <- factor(ADSL$SEX, levels = unique(ADSL$SEX))
+#'   })
 #'
-#' ADSL$SEX <- factor(ADSL$SEX, levels = unique(ADSL$SEX))
+#' datanames(data) <- c("ADSL", "ADTR", "ADRS")
+#' join_keys(data) <- default_cdisc_join_keys[datanames(data)]
 #'
-#' app <- teal::init(
-#'   data = cdisc_data(
-#'     cdisc_dataset("ADSL", ADSL,
-#'       code = "ADSL <- rADSL
-#'               ADSL$SEX <- factor(ADSL$SEX, levels = unique(ADSL$SEX))"
-#'     ),
-#'     cdisc_dataset("ADRS", ADRS, code = "ADRS <- rADRS"),
-#'     cdisc_dataset("ADTR", ADTR,
-#'       code = " ADTR <- rADTR",
-#'       c("STUDYID", "USUBJID", "PARAMCD", "AVISIT")
-#'     ),
-#'     check = TRUE
-#'   ),
+#' app <- init(
+#'   data = data,
 #'   modules = modules(
 #'     tm_g_waterfall(
 #'       label = "Waterfall",
 #'       dataname_tr = "ADTR",
 #'       dataname_rs = "ADRS",
-#'       bar_paramcd = teal.transform::choices_selected(c("SLDINV"), "SLDINV"),
-#'       bar_var = teal.transform::choices_selected(c("PCHG", "AVAL"), "PCHG"),
-#'       bar_color_var = teal.transform::choices_selected(c("ARMCD", "SEX"), "ARMCD"),
+#'       bar_paramcd = choices_selected(c("SLDINV"), "SLDINV"),
+#'       bar_var = choices_selected(c("PCHG", "AVAL"), "PCHG"),
+#'       bar_color_var = choices_selected(c("ARMCD", "SEX"), "ARMCD"),
 #'       bar_color_opt = NULL,
-#'       sort_var = teal.transform::choices_selected(c("ARMCD", "SEX"), NULL),
-#'       add_label_var_sl = teal.transform::choices_selected(c("SEX", "EOSDY"), NULL),
-#'       add_label_paramcd_rs = teal.transform::choices_selected(c("BESRSPI", "OBJRSPI"), NULL),
-#'       anno_txt_var_sl = teal.transform::choices_selected(c("SEX", "ARMCD", "BMK1", "BMK2"), NULL),
-#'       anno_txt_paramcd_rs = teal.transform::choices_selected(c("BESRSPI", "OBJRSPI"), NULL),
-#'       facet_var = teal.transform::choices_selected(c("SEX", "ARMCD", "STRATA1", "STRATA2"), NULL),
+#'       sort_var = choices_selected(c("ARMCD", "SEX"), NULL),
+#'       add_label_var_sl = choices_selected(c("SEX", "EOSDY"), NULL),
+#'       add_label_paramcd_rs = choices_selected(c("BESRSPI", "OBJRSPI"), NULL),
+#'       anno_txt_var_sl = choices_selected(c("SEX", "ARMCD", "BMK1", "BMK2"), NULL),
+#'       anno_txt_paramcd_rs = choices_selected(c("BESRSPI", "OBJRSPI"), NULL),
+#'       facet_var = choices_selected(c("SEX", "ARMCD", "STRATA1", "STRATA2"), NULL),
 #'       href_line = "-30, 20"
 #'     )
 #'   )
@@ -89,6 +83,7 @@
 #' if (interactive()) {
 #'   shinyApp(app$ui, app$server)
 #' }
+#'
 tm_g_waterfall <- function(label,
                            dataname_tr = "ADTR",
                            dataname_rs = "ADRS",
@@ -289,13 +284,14 @@ srv_g_waterfall <- function(id,
                             plot_width) {
   with_reporter <- !missing(reporter) && inherits(reporter, "Reporter")
   with_filter <- !missing(filter_panel_api) && inherits(filter_panel_api, "FilterPanelAPI")
-  checkmate::assert_class(data, "tdata")
+  checkmate::assert_class(data, "reactive")
+  checkmate::assert_class(shiny::isolate(data()), "teal_data")
 
   moduleServer(id, function(input, output, session) {
     iv <- reactive({
-      adsl <- data[["ADSL"]]()
-      adtr <- data[[dataname_tr]]()
-      adrs <- data[[dataname_rs]]()
+      adsl <- data()[["ADSL"]]
+      adtr <- data()[[dataname_tr]]
+      adrs <- data()[[dataname_rs]]
 
       iv <- shinyvalidate::InputValidator$new()
       iv$add_rule("bar_var", shinyvalidate::sv_required(
@@ -344,9 +340,9 @@ srv_g_waterfall <- function(id,
     })
 
     output_q <- reactive({
-      adsl <- data[["ADSL"]]()
-      adtr <- data[[dataname_tr]]()
-      adrs <- data[[dataname_rs]]()
+      adsl <- data()[["ADSL"]]
+      adtr <- data()[[dataname_tr]]
+      adrs <- data()[[dataname_rs]]
 
       # validate data rows
       teal::validate_has_data(adsl, min_nrow = 2)
@@ -390,9 +386,11 @@ srv_g_waterfall <- function(id,
       }
       ytick_at <- as.numeric(ytick_at)
 
-      bar_color_var <- if (!is.null(input$bar_color_var) &&
-        input$bar_color_var != "None" &&
-        input$bar_color_var != "") {
+      bar_color_var <- if (
+        !is.null(input$bar_color_var) &&
+          input$bar_color_var != "None" &&
+          input$bar_color_var != ""
+      ) {
         input$bar_color_var
       } else {
         NULL
@@ -410,7 +408,7 @@ srv_g_waterfall <- function(id,
 
       # write variables to qenv
       q1 <- teal.code::eval_code(
-        teal.code::new_qenv(tdata2env(data), code = get_code_tdata(data)),
+        data(),
         code = bquote({
           bar_var <- .(bar_var)
           bar_color_var <- .(bar_color_var)
@@ -559,11 +557,13 @@ srv_g_waterfall <- function(id,
 
     ### REPORTER
     if (with_reporter) {
-      card_fun <- function(comment) {
-        card <- teal::TealReportCard$new()
-        card$set_name("Waterfall")
-        card$append_text("Waterfall Plot", "header2")
-        if (with_filter) card$append_fs(filter_panel_api$get_filter_state())
+      card_fun <- function(comment, label) {
+        card <- teal::report_card_template(
+          title = "Waterfall Plot",
+          label = label,
+          with_filter = with_filter,
+          filter_panel_api = filter_panel_api
+        )
         card$append_text("Selected Options", "header3")
         card$append_text(paste0("Tumor Burden Parameter: ", input$bar_paramcd, "."))
         if (!is.null(input$sort_var)) {
@@ -578,7 +578,7 @@ srv_g_waterfall <- function(id,
           card$append_text("Comment", "header3")
           card$append_text(comment)
         }
-        card$append_src(paste(teal.code::get_code(output_q()), collapse = "\n"))
+        card$append_src(teal.code::get_code(output_q()))
         card
       }
       teal.reporter::simple_reporter_srv("simple_reporter", reporter = reporter, card_fun = card_fun)

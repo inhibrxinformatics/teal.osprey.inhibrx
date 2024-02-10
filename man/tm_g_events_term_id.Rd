@@ -42,7 +42,7 @@ vector to indicate default value, minimum and maximum values.}
 vector to indicate default value, minimum and maximum values.}
 }
 \value{
-the \code{\link[teal:module]{teal::module()}} object.
+the \code{\link[teal:teal_modules]{teal::module()}} object.
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#stable}{\figure{lifecycle-stable.svg}{options: alt='[Stable]'}}}{\strong{[Stable]}}
@@ -50,29 +50,30 @@ the \code{\link[teal:module]{teal::module()}} object.
 Display Events by Term plot as a shiny module
 }
 \examples{
-library(nestcolor)
+data <- cdisc_data() |>
+  within({
+    library(nestcolor)
+    ADSL <- rADSL
+    ADAE <- rADAE
+  })
 
-ADSL <- osprey::rADSL
-ADAE <- osprey::rADAE
+datanames(data) <- c("ADSL", "ADAE")
+join_keys(data) <- default_cdisc_join_keys[datanames(data)]
 
 app <- init(
-  data = cdisc_data(
-    cdisc_dataset("ADSL", ADSL, code = "ADSL <- osprey::rADSL"),
-    cdisc_dataset("ADAE", ADAE, code = "ADAE <- osprey::rADAE"),
-    check = TRUE
-  ),
+  data = data,
   modules = modules(
     tm_g_events_term_id(
       label = "Common AE",
       dataname = "ADAE",
-      term_var = teal.transform::choices_selected(
+      term_var = choices_selected(
         selected = "AEDECOD",
         choices = c(
           "AEDECOD", "AETERM",
           "AEHLT", "AELLT", "AEBODSYS"
         )
       ),
-      arm_var = teal.transform::choices_selected(
+      arm_var = choices_selected(
         selected = "ACTARMCD",
         choices = c("ACTARM", "ACTARMCD")
       ),

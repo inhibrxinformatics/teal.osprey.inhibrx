@@ -35,37 +35,29 @@
 #' @template author_qit3
 #'
 #' @examples
-#'
 #' # Example using stream (ADaM) dataset
-#' library(dplyr)
-#' library(nestcolor)
+#' data <- teal.data::cdisc_data() |>
+#'   within(library(dplyr)) |>
+#'   within(library(nestcolor)) |>
+#'   within(ADSL <- osprey::rADSL %>%
+#'     dplyr::mutate(TRTDURD = as.integer(TRTEDTM - TRTSDTM) + 1) %>%
+#'     dplyr::filter(STRATA1 == "A" & ARMCD == "ARM A")) |>
+#'   within(ADRS <- osprey::rADRS) |>
+#'   within(ADRS <- ADRS %>%
+#'     dplyr::filter(PARAMCD == "LSTASDI" & DCSREAS == "Death") %>%
+#'     mutate(AVALC = DCSREAS, ADY = EOSDY) %>%
+#'     base::rbind(ADRS %>% dplyr::filter(PARAMCD == "OVRINV" & AVALC != "NE")) %>%
+#'     arrange(USUBJID))
 #'
-#' ADSL <- osprey::rADSL %>%
-#'   dplyr::mutate(TRTDURD = as.integer(TRTEDTM - TRTSDTM) + 1) %>%
-#'   dplyr::filter(STRATA1 == "A" & ARMCD == "ARM A")
-#' ADRS <- osprey::rADRS
+#' teal.data::datanames(data) <- c("ADSL", "ADRS")
+#' teal.data::join_keys(data) <- teal.data::default_cdisc_join_keys[teal.data::datanames(data)]
 #'
-#' ADRS <- ADRS %>%
-#'   dplyr::filter(PARAMCD == "LSTASDI" & DCSREAS == "Death") %>%
-#'   mutate(AVALC = DCSREAS, ADY = EOSDY) %>%
-#'   base::rbind(ADRS %>% dplyr::filter(PARAMCD == "OVRINV" & AVALC != "NE")) %>%
-#'   arrange(USUBJID)
+#' ADSL <- data[["ADSL"]]
+#' ADRS <- data[["ADRS"]]
 #'
-#' app <- init(
-#'   data = cdisc_data(
-#'     cdisc_dataset("ADSL", ADSL, code = "ADSL <- osprey::rADSL %>%
-#'       dplyr::mutate(TRTDURD = as.integer(TRTEDTM - TRTSDTM) + 1) %>%
-#'       dplyr::filter(STRATA1 == 'A' & ARMCD == 'ARM A')"),
-#'     cdisc_dataset("ADRS", ADRS,
-#'       code = "ADRS <- rADRS
-#'               ADRS <- ADRS %>% dplyr::filter(PARAMCD == 'LSTASDI' & DCSREAS == 'Death') %>%
-#'                       mutate(AVALC = DCSREAS, ADY = EOSDY) %>%
-#'               rbind(ADRS %>% dplyr::filter(PARAMCD == 'OVRINV' & AVALC != 'NE')) %>%
-#'               arrange(USUBJID)"
-#'     ),
-#'     check = TRUE
-#'   ),
-#'   modules = modules(
+#' app <- teal::init(
+#'   data = data,
+#'   modules = teal::modules(
 #'     tm_g_swimlane(
 #'       label = "Swimlane Plot",
 #'       dataname = "ADRS",
@@ -285,7 +277,8 @@ srv_g_swimlane <- function(id,
                            x_label) {
   with_reporter <- !missing(reporter) && inherits(reporter, "Reporter")
   with_filter <- !missing(filter_panel_api) && inherits(filter_panel_api, "FilterPanelAPI")
-  checkmate::assert_class(data, "tdata")
+  checkmate::assert_class(data, "reactive")
+  checkmate::assert_class(shiny::isolate(data()), "teal_data")
 
   moduleServer(id, function(input, output, session) {
     iv <- reactive({
@@ -333,16 +326,16 @@ srv_g_swimlane <- function(id,
     output_q <- reactive({
       teal::validate_inputs(iv())
 
-      validate(need("ADSL" %in% names(data), "'ADSL' not included in data"))
+      validate(need("ADSL" %in% teal.data::datanames(data()), "'ADSL' not included in data"))
       validate(need(
-        (length(data) == 1 && dataname == "ADSL") ||
-          (length(data) >= 2 && dataname != "ADSL"), paste(
+        (length(teal.data::datanames(data())) == 1 && dataname == "ADSL") ||
+          (length(teal.data::datanames(data())) >= 2 && dataname != "ADSL"), paste(
           "Please either add just 'ADSL' as dataname when just ADSL is available.",
           "In case 2 datasets are available ADSL is not supposed to be the dataname."
         )
       ))
 
-      ADSL <- data[["ADSL"]]() # nolint
+      ADSL <- data()[["ADSL"]] # nolint
 
       anl_vars <- unique(c(
         "USUBJID", "STUDYID",
@@ -357,7 +350,7 @@ srv_g_swimlane <- function(id,
         teal::validate_has_data(ADSL, min_nrow = 3)
         teal::validate_has_variable(ADSL, adsl_vars)
       } else {
-        anl <- data[[dataname]]()
+        anl <- data()[[dataname]]
         teal::validate_has_data(anl, min_nrow = 3)
         teal::validate_has_variable(anl, anl_vars)
 
@@ -386,7 +379,7 @@ srv_g_swimlane <- function(id,
       }
       vref_line <- suppressWarnings(as_numeric_from_comma_sep_str(debounce(reactive(input$vref_line), 1500)()))
 
-      q1 <- teal.code::new_qenv(tdata2env(data), code = get_code_tdata(data))
+      q1 <- data()
 
       q2 <- teal.code::eval_code(
         q1,
@@ -409,7 +402,7 @@ srv_g_swimlane <- function(id,
             ADSL_p <- ADSL # nolint
             ADSL <- ADSL_p[, .(adsl_vars)] # nolint
             # only take last part of USUBJID
-            #ADSL$USUBJID <- unlist(lapply(strsplit(ADSL$USUBJID, "-", fixed = TRUE), tail, 1)) # nolint
+            ADSL$USUBJID <- unlist(lapply(strsplit(ADSL$USUBJID, "-", fixed = TRUE), tail, 1)) # nolint
           })
         )
       } else {
@@ -482,7 +475,7 @@ srv_g_swimlane <- function(id,
             marker_shape_opt = .(if (length(marker_shape_var) == 0) {
               NULL
             } else if (length(marker_shape_var) > 0 &
-              all(unique(anl[[marker_shape_var]]) %in% names(marker_shape_opt)) == TRUE) {
+              all(unique(anl[[marker_shape_var]]) %in% names(marker_shape_opt)) == TRUE) { # nolint
               bquote(.(marker_shape_opt))
             } else {
               NULL
@@ -495,7 +488,7 @@ srv_g_swimlane <- function(id,
             marker_color_opt = .(if (length(marker_color_var) == 0) {
               NULL
             } else if (length(marker_color_var) > 0 &
-              all(unique(anl[[marker_color_var]]) %in% names(marker_color_opt)) == TRUE) {
+              all(unique(anl[[marker_color_var]]) %in% names(marker_color_opt)) == TRUE) { # nolint
               bquote(.(marker_color_opt))
             } else {
               NULL
@@ -542,11 +535,13 @@ srv_g_swimlane <- function(id,
 
     ### REPORTER
     if (with_reporter) {
-      card_fun <- function(comment) {
-        card <- teal::TealReportCard$new()
-        card$set_name("Swimlane")
-        card$append_text("Swimlane Plot", "header2")
-        if (with_filter) card$append_fs(filter_panel_api$get_filter_state())
+      card_fun <- function(comment, label) {
+        card <- teal::report_card_template(
+          title = "Swimlane Plot",
+          label = label,
+          with_filter = with_filter,
+          filter_panel_api = filter_panel_api
+        )
         if (!is.null(input$sort_var)) {
           card$append_text("Selected Options", "header3")
           card$append_text(paste("Sorted by:", input$sort_var))
@@ -557,7 +552,7 @@ srv_g_swimlane <- function(id,
           card$append_text("Comment", "header3")
           card$append_text(comment)
         }
-        card$append_src(paste(teal.code::get_code(output_q()), collapse = "\n"))
+        card$append_src(teal.code::get_code(output_q()))
         card
       }
       teal.reporter::simple_reporter_srv("simple_reporter", reporter = reporter, card_fun = card_fun)

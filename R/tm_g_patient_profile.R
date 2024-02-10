@@ -62,70 +62,32 @@
 #' @export
 #'
 #' @examples
-#' library(nestcolor)
+#' data <- cdisc_data() |>
+#'   within({
+#'     library(nestcolor)
+#'     ADSL <- rADSL
+#'     ADAE <- rADAE %>% mutate(ASTDT = as.Date(ASTDTM), AENDT = as.Date(AENDTM))
+#'     ADCM <- rADCM %>% mutate(ASTDT = as.Date(ASTDTM), AENDT = as.Date(AENDTM))
+#'     # The step below is to pre-process ADCM to legacy standard
+#'     ADCM <- ADCM %>%
+#'       select(-starts_with("ATC")) %>%
+#'       unique()
+#'     ADRS <- rADRS %>% mutate(ADT = as.Date(ADTM))
+#'     ADEX <- rADEX %>% mutate(ASTDT = as.Date(ASTDTM), AENDT = as.Date(AENDTM))
+#'     ADLB <- rADLB %>% mutate(ADT = as.Date(ADTM), LBSTRESN = as.numeric(LBSTRESC))
+#'   })
 #'
-#' ADSL <- osprey::rADSL
-#' ADAE <- osprey::rADAE %>%
-#'   mutate(
-#'     ASTDT = as.Date(ASTDTM),
-#'     AENDT = as.Date(AENDTM)
-#'   )
-#' ADCM <- osprey::rADCM %>%
-#'   mutate(
-#'     ASTDT = as.Date(ASTDTM),
-#'     AENDT = as.Date(AENDTM)
-#'   )
+#' datanames(data) <- c("ADSL", "ADAE", "ADCM", "ADRS", "ADEX", "ADLB")
+#' join_keys(data) <- default_cdisc_join_keys[datanames(data)]
 #'
-#' # The step below is to pre-process ADCM to legacy standard
-#' ADCM <- ADCM %>%
-#'   select(-starts_with("ATC")) %>%
-#'   unique()
-#'
-#' ADRS <- osprey::rADRS %>%
-#'   mutate(ADT = as.Date(ADTM))
-#' ADEX <- osprey::rADEX %>%
-#'   mutate(
-#'     ASTDT = as.Date(ASTDTM),
-#'     AENDT = as.Date(AENDTM)
-#'   )
-#' ADLB <- osprey::rADLB %>%
-#'   mutate(
-#'     ADT = as.Date(ADTM),
-#'     LBSTRESN = as.numeric(LBSTRESC)
-#'   )
+#' ADSL <- data[["ADSL"]]
 #'
 #' app <- init(
-#'   data = cdisc_data(
-#'     cdisc_dataset("ADSL", ADSL, code = "ADSL <- osprey::rADSL"),
-#'     cdisc_dataset("ADRS", ADRS, code = "ADRS <- osprey::rADRS %>% mutate(ADT = as.Date(ADTM))"),
-#'     cdisc_dataset("ADAE", ADAE,
-#'       code = "ADAE <- osprey::rADAE %>%
-#'               mutate(ASTDT = as.Date(ASTDTM),
-#'                      AENDT = as.Date(AENDTM))"
-#'     ),
-#'     cdisc_dataset("ADCM", ADCM,
-#'       code = "ADCM <- osprey::rADCM %>%
-#'               mutate(ASTDT = as.Date(ASTDTM),
-#'                      AENDT = as.Date(AENDTM))
-#'               ADCM <- ADCM %>% select(-starts_with(\"ATC\")) %>% unique()",
-#'       keys = c("STUDYID", "USUBJID", "ASTDTM", "CMSEQ", "CMDECOD")
-#'     ),
-#'     cdisc_dataset("ADLB", ADLB,
-#'       code = "ADLB <- osprey::rADLB %>%
-#'               mutate(ADT = as.Date(ADTM),
-#'                      LBSTRESN = as.numeric(LBSTRESC))"
-#'     ),
-#'     cdisc_dataset("ADEX", ADEX,
-#'       code = "ADEX <- osprey::rADEX %>%
-#'               mutate(ASTDT = as.Date(ASTDTM),
-#'                      AENDT = as.Date(AENDTM))"
-#'     ),
-#'     check = FALSE # set FALSE here to keep run time of example short, should be set to TRUE
-#'   ),
+#'   data = data,
 #'   modules = modules(
 #'     tm_g_patient_profile(
 #'       label = "Patient Profile Plot",
-#'       patient_id = teal.transform::choices_selected(
+#'       patient_id = choices_selected(
 #'         choices = unique(ADSL$USUBJID),
 #'         selected = unique(ADSL$USUBJID)[1]
 #'       ),
@@ -135,32 +97,32 @@
 #'       rs_dataname = "ADRS",
 #'       cm_dataname = "ADCM",
 #'       lb_dataname = "ADLB",
-#'       sl_start_date = teal.transform::choices_selected(
+#'       sl_start_date = choices_selected(
 #'         selected = "TRTSDTM",
 #'         choices = c("TRTSDTM", "RANDDT")
 #'       ),
-#'       ex_var = teal.transform::choices_selected(
+#'       ex_var = choices_selected(
 #'         selected = "PARCAT2",
 #'         choices = "PARCAT2"
 #'       ),
-#'       ae_var = teal.transform::choices_selected(
+#'       ae_var = choices_selected(
 #'         selected = "AEDECOD",
 #'         choices = c("AEDECOD", "AESOC")
 #'       ),
-#'       ae_line_col_var = teal.transform::choices_selected(
+#'       ae_line_col_var = choices_selected(
 #'         selected = "AESER",
 #'         choices = c("AESER", "AEREL")
 #'       ),
 #'       ae_line_col_opt = c("Y" = "red", "N" = "blue"),
-#'       rs_var = teal.transform::choices_selected(
+#'       rs_var = choices_selected(
 #'         selected = "PARAMCD",
 #'         choices = "PARAMCD"
 #'       ),
-#'       cm_var = teal.transform::choices_selected(
+#'       cm_var = choices_selected(
 #'         selected = "CMDECOD",
 #'         choices = c("CMDECOD", "CMCAT")
 #'       ),
-#'       lb_var = teal.transform::choices_selected(
+#'       lb_var = choices_selected(
 #'         selected = "LBTESTCD",
 #'         choices = c("LBTESTCD", "LBCAT")
 #'       ),
@@ -393,7 +355,8 @@ srv_g_patient_profile <- function(id,
                                   plot_width) {
   with_reporter <- !missing(reporter) && inherits(reporter, "Reporter")
   with_filter <- !missing(filter_panel_api) && inherits(filter_panel_api, "FilterPanelApi")
-  checkmate::assert_class(data, "tdata")
+  checkmate::assert_class(data, "reactive")
+  checkmate::assert_class(shiny::isolate(data()), "teal_data")
   if (!is.na(ex_dataname)) checkmate::assert_names(ex_dataname, subset.of = names(data))
   if (!is.na(ae_dataname)) checkmate::assert_names(ae_dataname, subset.of = names(data))
   if (!is.na(rs_dataname)) checkmate::assert_names(rs_dataname, subset.of = names(data))
@@ -407,7 +370,7 @@ srv_g_patient_profile <- function(id,
 
     if (!is.na(lb_dataname)) {
       observeEvent(input$lb_var, ignoreNULL = TRUE, {
-        ADLB <- data[[lb_dataname]]() # nolint
+        ADLB <- data()[[lb_dataname]] # nolint
         choices <- unique(ADLB[[input$lb_var]])
         choices_selected <- if (length(choices) > 5) choices[1:5] else choices
 
@@ -438,7 +401,7 @@ srv_g_patient_profile <- function(id,
           message = "Adverse Event variable is required"
         ))
         iv$add_rule("ae_line_var", shinyvalidate::sv_optional())
-        iv$add_rule("ae_line_var", ~ if (length(levels(data[[ae_dataname]]()[[.]])) > length(ae_line_col_opt)) {
+        iv$add_rule("ae_line_var", ~ if (length(levels(data()[[ae_dataname]][[.]])) > length(ae_line_col_opt)) {
           "Not enough colors provided for Adverse Event line color, unselect"
         })
       }
@@ -533,31 +496,31 @@ srv_g_patient_profile <- function(id,
         ))
 
         # get ADSL dataset ---
-        ADSL <- data[[sl_dataname]]() # nolint
+        ADSL <- data()[[sl_dataname]] # nolint
 
         ADEX <- NULL # nolint
         if (isTRUE(select_plot()[ex_dataname])) {
-          ADEX <- data[[ex_dataname]]() # nolint
+          ADEX <- data()[[ex_dataname]] # nolint
           teal::validate_has_variable(ADEX, adex_vars)
         }
         ADAE <- NULL # nolint
         if (isTRUE(select_plot()[ae_dataname])) {
-          ADAE <- data[[ae_dataname]]() # nolint
+          ADAE <- data()[[ae_dataname]] # nolint
           teal::validate_has_variable(ADAE, adae_vars)
         }
         ADRS <- NULL # nolint
         if (isTRUE(select_plot()[rs_dataname])) {
-          ADRS <- data[[rs_dataname]]() # nolint
+          ADRS <- data()[[rs_dataname]] # nolint
           teal::validate_has_variable(ADRS, adrs_vars)
         }
         ADCM <- NULL # nolint
         if (isTRUE(select_plot()[cm_dataname])) {
-          ADCM <- data[[cm_dataname]]() # nolint
+          ADCM <- data()[[cm_dataname]] # nolint
           teal::validate_has_variable(ADCM, adcm_vars)
         }
         ADLB <- NULL # nolint
         if (isTRUE(select_plot()[lb_dataname])) {
-          ADLB <- data[[lb_dataname]]() # nolint
+          ADLB <- data()[[lb_dataname]] # nolint
           teal::validate_has_variable(ADLB, adlb_vars)
         }
 
@@ -568,7 +531,7 @@ srv_g_patient_profile <- function(id,
         empty_lb <- FALSE
 
         q1 <- teal.code::eval_code(
-          teal.code::new_qenv(tdata2env(data), code = get_code_tdata(data)),
+          data(),
           code = substitute(
             expr = {
               ADSL <- ADSL %>% # nolint
@@ -736,7 +699,7 @@ srv_g_patient_profile <- function(id,
                     select(USUBJID, ASTDT, AENDT, ASTDY, AENDY, !!quo(cm_var))
                   if (length(unique(ADCM$USUBJID)) > 0) {
                     ADCM <- ADCM[which(ADCM$AENDY >= -28 | is.na(ADCM$AENDY) == TRUE # nolint
-                    & is.na(ADCM$ASTDY) == FALSE), ]
+                    & is.na(ADCM$ASTDY) == FALSE), ] # nolint
                   }
                   cm <- list(data = data.frame(ADCM), var = as.vector(ADCM[, cm_var]))
                 },
@@ -951,18 +914,20 @@ srv_g_patient_profile <- function(id,
 
     ### REPORTER
     if (with_reporter) {
-      card_fun <- function(comment) {
-        card <- teal::TealReportCard$new()
-        card$set_name("Patient Profile")
-        card$append_text("Patient Profile", "header2")
-        if (with_filter) card$append_fs(filter_panel_api$get_filter_state())
+      card_fun <- function(comment, label) {
+        card <- teal::report_card_template(
+          title = "Patient Profile",
+          label = label,
+          with_filter = with_filter,
+          filter_panel_api = filter_panel_api
+        )
         card$append_text("Plot", "header3")
         card$append_plot(plot_r(), dim = pws$dim())
         if (!comment == "") {
           card$append_text("Comment", "header3")
           card$append_text(comment)
         }
-        card$append_src(paste(teal.code::get_code(output_q()), collapse = "\n"))
+        card$append_src(teal.code::get_code(output_q()))
         card
       }
       teal.reporter::simple_reporter_srv("simple_reporter", reporter = reporter, card_fun = card_fun)
